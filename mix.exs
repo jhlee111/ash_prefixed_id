@@ -37,7 +37,7 @@ defmodule AshPrefixedId.MixProject do
     [
       name: :ash_prefixed_id,
       licenses: ["MIT"],
-      files: ["lib", ".formatter.exs", "mix.exs", "README*", "LICENSE*"],
+      files: ["lib", ".formatter.exs", "mix.exs", "README*", "LICENSE*", "CHANGELOG*"],
       links: %{
         GitHub: @project_url
       }
