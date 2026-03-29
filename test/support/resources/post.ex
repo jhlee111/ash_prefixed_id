@@ -1,12 +1,12 @@
-defmodule AshObjectIds.Test.Resources.Post do
+defmodule AshPrefixedId.Test.Resources.Post do
   @moduledoc false
 
   use Ash.Resource,
-    domain: AshObjectIds.Test.Domain,
+    domain: AshPrefixedId.Test.Domain,
     data_layer: Ash.DataLayer.Ets,
-    extensions: [AshObjectIds]
+    extensions: [AshPrefixedId]
 
-  object_id do
+  prefixed_id do
     prefix "post"
   end
 
@@ -24,6 +24,6 @@ defmodule AshObjectIds.Test.Resources.Post do
   end
 
   relationships do
-    has_many(:comments, AshObjectIds.Test.Resources.Comment)
+    has_many(:comments, AshPrefixedId.Test.Resources.Comment)
   end
 end

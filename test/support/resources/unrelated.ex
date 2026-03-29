@@ -1,12 +1,12 @@
-defmodule AshObjectIds.Test.Resources.Unrelated do
+defmodule AshPrefixedId.Test.Resources.Unrelated do
   @moduledoc false
 
   use Ash.Resource,
-    domain: AshObjectIds.Test.Domain,
+    domain: AshPrefixedId.Test.Domain,
     data_layer: Ash.DataLayer.Ets,
-    extensions: [AshObjectIds]
+    extensions: [AshPrefixedId]
 
-  object_id do
+  prefixed_id do
     # Duplicate with comment
     prefix "c"
   end

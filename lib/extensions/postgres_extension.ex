@@ -1,5 +1,5 @@
 if Code.ensure_loaded?(AshPostgres.CustomExtension) do
-  defmodule AshObjectIds.PostgresExtension do
+  defmodule AshPrefixedId.PostgresExtension do
     @moduledoc """
     AshPostgres custom extension that provides `uuid_generate_v7()` and
     `timestamp_from_uuid_v7()` PostgreSQL functions.
@@ -12,17 +12,17 @@ if Code.ensure_loaded?(AshPostgres.CustomExtension) do
           use AshPostgres.Repo, otp_app: :my_app
 
           def installed_extensions do
-            ["ash-object-ids", ...]
+            ["ash-prefixed-id", ...]
           end
         end
 
     Then generate and run the migration:
 
-        mix ash.codegen install_object_ids_extension
+        mix ash.codegen install_prefixed_id_extension
         mix ash.migrate
     """
 
-    use AshPostgres.CustomExtension, name: "ash-object-ids", latest_version: 1
+    use AshPostgres.CustomExtension, name: "ash-prefixed-id", latest_version: 1
 
     @impl true
     def install(_version) do

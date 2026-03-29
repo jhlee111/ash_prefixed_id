@@ -1,8 +1,8 @@
-defmodule AshObjectIds do
+defmodule AshPrefixedId do
   @moduledoc """
-  An extension for working with object IDs.
+  An extension for working with prefixed IDs.
 
-  Object IDs are identifiers that are prefixed with the resource they identify.
+  Prefixed IDs are identifiers that are prefixed with the resource they identify.
   A more detailed explanation can be found in the ["Designing APIs for
   humans"](https://dev.to/stripe/designing-apis-for-humans-object-ids-3o5a) blog post.
 
@@ -12,9 +12,9 @@ defmodule AshObjectIds do
         use Ash.Resource,
           domain: App.Blog,
           data_layer: Ash.DataLayer.AshPostgres,
-          extensions: [AshObjectIds]
+          extensions: [AshPrefixedId]
 
-        object_id do
+        prefixed_id do
           prefix "p"
         end
 
@@ -24,7 +24,7 @@ defmodule AshObjectIds do
         end
       end
 
-  `AshObjectIds` replaces the `:id` primary key with an object ID (prefixed by "p").
+  `AshPrefixedId` replaces the `:id` primary key with a prefixed ID (prefixed by "p").
   The underlying UUID implementation will be used, so it works with both UUID
   and UUIDv7. The IDs are stored as regular UUIDs in the database. Externally,
   the UUIDs are encoded as "{prefix}_{base58(uuid)}".
@@ -39,29 +39,29 @@ defmodule AshObjectIds do
       end
   """
 
-  alias AshObjectIds.Type
+  alias AshPrefixedId.Type
 
   @transformers (if Code.ensure_loaded?(AshPostgres.DataLayer) do
     [
-      AshObjectIds.Transformers.BelongsToAttribute,
-      AshObjectIds.Transformers.MigrationDefaults
+      AshPrefixedId.Transformers.BelongsToAttribute,
+      AshPrefixedId.Transformers.MigrationDefaults
     ]
   else
     [
-      AshObjectIds.Transformers.BelongsToAttribute
+      AshPrefixedId.Transformers.BelongsToAttribute
     ]
   end)
 
   @persisters [
-    AshObjectIds.Persisters.DefineType
+    AshPrefixedId.Persisters.DefineType
   ]
 
-  @object_id %Spark.Dsl.Section{
-    name: :object_id,
-    describe: "Use object ID for identifier of a resource",
+  @prefixed_id %Spark.Dsl.Section{
+    name: :prefixed_id,
+    describe: "Use prefixed ID for identifier of a resource",
     examples: [
       """
-      object_id do
+      prefixed_id do
         prefix "u"
       end
       """
@@ -75,19 +75,19 @@ defmodule AshObjectIds do
       migration_default?: [
         type: :boolean,
         doc:
-          "When true, adds `uuid_generate_v7()` as the PostgreSQL migration default for the primary key. Requires `AshObjectIds.PostgresExtension` to be installed.",
+          "When true, adds `uuid_generate_v7()` as the PostgreSQL migration default for the primary key. Requires `AshPrefixedId.PostgresExtension` to be installed.",
         default: false
       ]
     ]
   }
 
   use Spark.Dsl.Extension,
-    sections: [@object_id],
+    sections: [@prefixed_id],
     transformers: @transformers,
     persisters: @persisters
 
   @doc """
-  Decodes the given object ID into a string version of the UUID.
+  Decodes the given prefixed ID into a string version of the UUID.
 
   ## Examples
 
@@ -109,7 +109,7 @@ defmodule AshObjectIds do
   end
 
   @doc """
-  Searches the given domains for the resource that matches the given object ID
+  Searches the given domains for the resource that matches the given prefixed ID
   prefix.
 
   You can get the domains through `Application.get_env(:my_otp_app, :ash_domains, [])`
@@ -127,7 +127,7 @@ defmodule AshObjectIds do
       domain
       |> Ash.Domain.Info.resources()
       |> Enum.find_value(fn resource ->
-        case AshObjectIds.Info.object_id_prefix(resource) do
+        case AshPrefixedId.Info.prefixed_id_prefix(resource) do
           {:ok, ^prefix} -> resource
           _ -> nil
         end
@@ -136,7 +136,7 @@ defmodule AshObjectIds do
   end
 
   @doc """
-  Same as `find_resource_for_prefix/2` but accepts a (valid) object ID.
+  Same as `find_resource_for_prefix/2` but accepts a (valid) prefixed ID.
 
   ## Examples
 
@@ -163,7 +163,7 @@ defmodule AshObjectIds do
       domain
       |> Ash.Domain.Info.resources()
       |> Enum.reduce(mapping, fn resource, mapping ->
-        case AshObjectIds.Info.object_id_prefix(resource) do
+        case AshPrefixedId.Info.prefixed_id_prefix(resource) do
           {:ok, prefix} -> Map.update(mapping, prefix, [resource], &[resource | &1])
           _ -> mapping
         end
@@ -186,5 +186,48 @@ defmodule AshObjectIds do
       {_key, [_]} -> false
       _ -> true
     end)
+  end
+
+  @doc """
+  Convert a prefixed ID to a 16-byte UUID binary for raw SQL fragments.
+
+  ## Examples
+
+      iex> to_uuid!("user_CWzLBdFy2f1XhrtesFferY")
+      <<93, 68, 109, 8, ...>>  # 16-byte binary
+  """
+  @spec to_uuid!(binary()) :: binary()
+  def to_uuid!(prefixed_id) when is_binary(prefixed_id) do
+    case Type.decode_object_id(prefixed_id) do
+      {:ok, _prefix, uuid_bin} -> uuid_bin
+      _ -> raise ArgumentError, "invalid prefixed ID: #{inspect(prefixed_id)}"
+    end
+  end
+
+  @doc """
+  Convert a prefixed ID to a UUID string format.
+
+  ## Examples
+
+      iex> to_uuid_string!("user_CWzLBdFy2f1XhrtesFferY")
+      "5d446d08-df6a-404d-a1e5-decc78429b3d"
+  """
+  @spec to_uuid_string!(binary()) :: String.t()
+  def to_uuid_string!(prefixed_id) when is_binary(prefixed_id) do
+    {:ok, uuid_string} = Ecto.UUID.cast(to_uuid!(prefixed_id))
+    uuid_string
+  end
+
+  @doc """
+  Convert a UUID binary or string to a prefixed ID.
+
+  ## Examples
+
+      iex> to_prefixed_id(<<93, 68, 109, 8, ...>>, "user")
+      "user_CWzLBdFy2f1XhrtesFferY"
+  """
+  @spec to_prefixed_id(binary(), String.t()) :: String.t()
+  def to_prefixed_id(uuid_bin_or_string, prefix) when is_binary(prefix) do
+    Type.encode_uuid(uuid_bin_or_string, prefix)
   end
 end

@@ -1,4 +1,4 @@
-defmodule AshObjectIds.Type do
+defmodule AshPrefixedId.Type do
   @moduledoc false
 
   def cast_input(_uuid_type, _prefix, nil, _constraints), do: {:ok, nil}

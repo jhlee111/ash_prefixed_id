@@ -1,9 +1,9 @@
-defmodule AshObjectIds.AnyObjectId do
+defmodule AshPrefixedId.AnyPrefixedId do
   @moduledoc """
-  A universal ObjectId type that accepts any prefixed object ID.
+  A universal PrefixedId type that accepts any prefixed ID.
 
   This type is useful as a global replacement for `:uuid` when you want
-  all UUID fields (including action arguments, non-AshObjectIds resources,
+  all UUID fields (including action arguments, non-AshPrefixedId resources,
   and manual attributes) to accept prefixed IDs.
 
   ## Usage
@@ -11,7 +11,7 @@ defmodule AshObjectIds.AnyObjectId do
   Register as a custom type in your Ash config:
 
       config :ash,
-        custom_types: [uuid: AshObjectIds.AnyObjectId]
+        custom_types: [uuid: AshPrefixedId.AnyPrefixedId]
 
   This replaces the standard `Ash.Type.UUID` for all `:uuid` references,
   making them accept both prefixed IDs (`"user_CWzLBdFy2f1XhrtesFferY"`)
@@ -19,7 +19,7 @@ defmodule AshObjectIds.AnyObjectId do
 
   ## Behavior
 
-  - **Input**: Accepts any prefixed object ID or raw UUID string
+  - **Input**: Accepts any prefixed ID or raw UUID string
   - **Storage**: Native PostgreSQL UUID binary (16 bytes)
   - **Output**: Returns the original prefixed form if available, otherwise
     the raw UUID string from the database
@@ -34,7 +34,7 @@ defmodule AshObjectIds.AnyObjectId do
   def cast_input(nil, _constraints), do: {:ok, nil}
 
   def cast_input(input, _constraints) when is_binary(input) do
-    case AshObjectIds.Type.decode_object_id(input) do
+    case AshPrefixedId.Type.decode_object_id(input) do
       {:ok, _prefix, _uuid} ->
         {:ok, input}
 
@@ -60,7 +60,7 @@ defmodule AshObjectIds.AnyObjectId do
   def dump_to_native(nil, _constraints), do: {:ok, nil}
 
   def dump_to_native(input, _constraints) when is_binary(input) do
-    case AshObjectIds.Type.decode_object_id(input) do
+    case AshPrefixedId.Type.decode_object_id(input) do
       {:ok, _prefix, uuid_binary} ->
         {:ok, uuid_binary}
 

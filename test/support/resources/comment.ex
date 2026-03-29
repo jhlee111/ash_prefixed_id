@@ -1,14 +1,14 @@
-defmodule AshObjectIds.Test.Resources.Comment do
+defmodule AshPrefixedId.Test.Resources.Comment do
   @moduledoc false
 
-  alias AshObjectIds.Test.Resources.Post
+  alias AshPrefixedId.Test.Resources.Post
 
   use Ash.Resource,
-    domain: AshObjectIds.Test.Domain,
+    domain: AshPrefixedId.Test.Domain,
     data_layer: Ash.DataLayer.Ets,
-    extensions: [AshObjectIds]
+    extensions: [AshPrefixedId]
 
-  object_id do
+  prefixed_id do
     prefix "c"
   end
 

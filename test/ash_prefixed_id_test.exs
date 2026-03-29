@@ -1,11 +1,11 @@
-defmodule AshObjectIdsTest do
+defmodule AshPrefixedIdTest do
   use ExUnit.Case, async: true
 
-  alias AshObjectIds
-  alias AshObjectIds.Test.Domain
-  alias AshObjectIds.Test.Resources.Comment
-  alias AshObjectIds.Test.Resources.Post
-  alias AshObjectIds.Test.Resources.Unrelated
+  alias AshPrefixedId
+  alias AshPrefixedId.Test.Domain
+  alias AshPrefixedId.Test.Resources.Comment
+  alias AshPrefixedId.Test.Resources.Post
+  alias AshPrefixedId.Test.Resources.Unrelated
 
   test "it replaces the primary key with an object id" do
     assert [pk] = Ash.Resource.Info.primary_key(Post)
@@ -21,7 +21,7 @@ defmodule AshObjectIdsTest do
       |> Ash.create!()
 
     assert "post_" <> id = post.id
-    assert AshObjectIds.find_resource_for_id([Domain], post.id) == Post
+    assert AshPrefixedId.find_resource_for_id([Domain], post.id) == Post
 
     assert_raise Ash.Error.Invalid, ~r/incorrect object prefix/, fn ->
       Comment
@@ -52,21 +52,21 @@ defmodule AshObjectIdsTest do
   end
 
   test "find_resource_for_prefix/2" do
-    assert AshObjectIds.find_resource_for_prefix([Domain], "post") == Post
-    assert AshObjectIds.find_resource_for_prefix([Domain], "florb") == nil
+    assert AshPrefixedId.find_resource_for_prefix([Domain], "post") == Post
+    assert AshPrefixedId.find_resource_for_prefix([Domain], "florb") == nil
   end
 
   test "find_resource_for_id/2" do
-    assert AshObjectIds.find_resource_for_id([Domain], "post_CWzLBdFy2f1XhrtesFferY") == Post
-    assert AshObjectIds.find_resource_for_id([Domain], "florb_CWzLBdFy2f1XhrtesFferY") == nil
+    assert AshPrefixedId.find_resource_for_id([Domain], "post_CWzLBdFy2f1XhrtesFferY") == Post
+    assert AshPrefixedId.find_resource_for_id([Domain], "florb_CWzLBdFy2f1XhrtesFferY") == nil
   end
 
   test "map_prefixes_to_resources/1" do
     assert %{"post" => [Post], "c" => [Unrelated, Comment]} =
-             AshObjectIds.map_prefixes_to_resources([Domain])
+             AshPrefixedId.map_prefixes_to_resources([Domain])
   end
 
   test "find_duplicate_prefixes" do
-    assert %{"c" => [Unrelated, Comment]} == AshObjectIds.find_duplicate_prefixes([Domain])
+    assert %{"c" => [Unrelated, Comment]} == AshPrefixedId.find_duplicate_prefixes([Domain])
   end
 end

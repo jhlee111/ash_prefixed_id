@@ -1,3 +1,3 @@
-defmodule AshObjectIds.Info do
-  use Spark.InfoGenerator, extension: AshObjectIds, sections: [:object_id]
+defmodule AshPrefixedId.Info do
+  use Spark.InfoGenerator, extension: AshPrefixedId, sections: [:prefixed_id]
 end

@@ -1,7 +1,7 @@
-defmodule AshObjectIds.TypeTest do
+defmodule AshPrefixedId.TypeTest do
   use ExUnit.Case, async: true
 
-  alias AshObjectIds.Type
+  alias AshPrefixedId.Type
 
   for type <- [Ash.Type.UUID, Ash.Type.UUIDv7] do
     test "cast_input with #{inspect(type)}" do
@@ -60,7 +60,7 @@ defmodule AshObjectIds.TypeTest do
   end
 
   test "dump_to_embedded preserves prefix via generated ObjectId" do
-    alias AshObjectIds.Test.Resources.Post
+    alias AshPrefixedId.Test.Resources.Post
 
     # Generate a post ID
     post =
@@ -89,7 +89,7 @@ defmodule AshObjectIds.TypeTest do
   end
 
   test "generated ObjectId equal?/2" do
-    alias AshObjectIds.Test.Resources.Post
+    alias AshPrefixedId.Test.Resources.Post
 
     id1 = Post.ObjectId.generator([]) |> Enum.take(1) |> hd()
     assert Post.ObjectId.equal?(id1, id1)

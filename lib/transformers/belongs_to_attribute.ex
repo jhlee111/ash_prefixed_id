@@ -1,7 +1,7 @@
-defmodule AshObjectIds.Transformers.BelongsToAttribute do
+defmodule AshPrefixedId.Transformers.BelongsToAttribute do
   @moduledoc """
   Automatically updates FK attributes with the correct ObjectId type for
-  `belongs_to` relationships pointing to AshObjectIds resources.
+  `belongs_to` relationships pointing to AshPrefixedId resources.
 
   Without this transformer, users must manually specify:
 

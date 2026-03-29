@@ -1,9 +1,9 @@
-defmodule AshObjectIds.Persisters.DefineType do
+defmodule AshPrefixedId.Persisters.DefineType do
   @moduledoc false
   use Spark.Dsl.Transformer
 
   def transform(dsl) do
-    prefix = AshObjectIds.Info.object_id_prefix!(dsl)
+    prefix = AshPrefixedId.Info.prefixed_id_prefix!(dsl)
     module = Spark.Dsl.Transformer.get_persisted(dsl, :module)
 
     {dsl, uuid_type} =
@@ -25,7 +25,7 @@ defmodule AshObjectIds.Persisters.DefineType do
           attr = %{
             attr
             | type: new_type,
-              default: {AshObjectIds.Type, :generate, [uuid_type, prefix, attr.constraints]}
+              default: {AshPrefixedId.Type, :generate, [uuid_type, prefix, attr.constraints]}
           }
 
           dsl =
@@ -64,12 +64,12 @@ defmodule AshObjectIds.Persisters.DefineType do
 
             @impl Ash.Type
             def cast_input(input, constraints) do
-              AshObjectIds.Type.cast_input(unquote(uuid_type), unquote(prefix), input, constraints)
+              AshPrefixedId.Type.cast_input(unquote(uuid_type), unquote(prefix), input, constraints)
             end
 
             @impl Ash.Type
             def cast_stored(input, constraints) do
-              AshObjectIds.Type.cast_stored(
+              AshPrefixedId.Type.cast_stored(
                 unquote(uuid_type),
                 unquote(prefix),
                 input,
@@ -79,7 +79,7 @@ defmodule AshObjectIds.Persisters.DefineType do
 
             @impl Ash.Type
             def dump_to_native(input, constraints) do
-              AshObjectIds.Type.dump_to_native(
+              AshPrefixedId.Type.dump_to_native(
                 unquote(uuid_type),
                 unquote(prefix),
                 input,
@@ -94,7 +94,7 @@ defmodule AshObjectIds.Persisters.DefineType do
 
             @impl Ash.Type
             def equal?(term1, term2) do
-              AshObjectIds.Type.equal?(unquote(prefix), term1, term2)
+              AshPrefixedId.Type.equal?(unquote(prefix), term1, term2)
             end
 
             @impl Ash.Type
@@ -112,13 +112,13 @@ defmodule AshObjectIds.Persisters.DefineType do
 
             @impl Ash.Type
             def generator(constraints) do
-              AshObjectIds.Type.generator(unquote(uuid_type), unquote(prefix), constraints)
+              AshPrefixedId.Type.generator(unquote(uuid_type), unquote(prefix), constraints)
             end
           end
         end
       )
 
-    # Update FK attributes for belongs_to relationships pointing to AshObjectIds resources
+    # Update FK attributes for belongs_to relationships pointing to AshPrefixedId resources
     dsl = update_fk_attributes(dsl, module)
 
     {:ok, dsl}
@@ -166,7 +166,7 @@ defmodule AshObjectIds.Persisters.DefineType do
       end
 
     if destination_dsl do
-      case AshObjectIds.Info.object_id_prefix(destination_dsl) do
+      case AshPrefixedId.Info.prefixed_id_prefix(destination_dsl) do
         {:ok, _prefix} ->
           # The ObjectId module will be defined by the destination's DefineType
           # persister. It may not exist yet at compile time (compilation order

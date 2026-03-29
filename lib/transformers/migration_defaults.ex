@@ -1,13 +1,13 @@
 if Code.ensure_loaded?(AshPostgres.DataLayer) do
-  defmodule AshObjectIds.Transformers.MigrationDefaults do
+  defmodule AshPrefixedId.Transformers.MigrationDefaults do
     @moduledoc """
     Sets PostgreSQL migration defaults for ObjectId primary key attributes.
 
-    When `migration_default?` is enabled in the `object_id` DSL, this transformer
+    When `migration_default?` is enabled in the `prefixed_id` DSL, this transformer
     adds `fragment("uuid_generate_v7()")` as the migration default for the primary
     key. This ensures UUIDs are generated database-side for raw SQL inserts and seeds.
 
-    Requires the `AshObjectIds.PostgresExtension` to be installed in your repo.
+    Requires the `AshPrefixedId.PostgresExtension` to be installed in your repo.
     """
     use Spark.Dsl.Transformer
 
@@ -18,7 +18,7 @@ if Code.ensure_loaded?(AshPostgres.DataLayer) do
 
       dsl_state =
         if data_layer == AshPostgres.DataLayer do
-          case AshObjectIds.Info.object_id_migration_default?(dsl_state) do
+          case AshPrefixedId.Info.prefixed_id_migration_default?(dsl_state) do
             {:ok, true} ->
               [pk] = Ash.Resource.Info.primary_key(dsl_state)
 

@@ -1,4 +1,4 @@
-# AshObjectIds
+# AshPrefixedId
 
 An extension for Ash for working with [object IDs](https://dev.to/stripe/designing-apis-for-humans-object-ids-3o5a).
 
@@ -7,9 +7,9 @@ defmodule App.Blog.Post do
   use Ash.Resource,
     domain: App.Blog,
     data_layer: Ash.DataLayer.AshPostgres,
-    extensions: [AshObjectIds]
+    extensions: [AshPrefixedId]
 
-  object_id do
+  prefixed_id do
     prefix "p"
   end
 
@@ -33,4 +33,4 @@ end
   |> Ash.create!()
 ```
 
-For more detailed information, read the `AshObjectIds` moduledoc.
+For more detailed information, read the `AshPrefixedId` moduledoc.

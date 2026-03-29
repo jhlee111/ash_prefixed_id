@@ -1,17 +1,17 @@
-defmodule AshObjectIds.MixProject do
+defmodule AshPrefixedId.MixProject do
   use Mix.Project
 
   @description """
-  An Ash extension to use object IDs as primary and foreign keys.
+  An Ash extension to use prefixed IDs as primary and foreign keys.
   """
 
   @version "0.1.0"
 
-  @project_url "https://github.com/drtheuns/ash_object_ids"
+  @project_url "https://github.com/jhlee111/ash_prefixed_id"
 
   def project do
     [
-      app: :ash_object_ids,
+      app: :ash_prefixed_id,
       version: @version,
       package: package(),
       elixir: "~> 1.14",
@@ -35,7 +35,7 @@ defmodule AshObjectIds.MixProject do
 
   defp package do
     [
-      name: :ash_object_ids,
+      name: :ash_prefixed_id,
       licenses: ["MIT"],
       files: ["lib", ".formatter.exs", "mix.exs", "README*", "LICENSE*"],
       links: %{

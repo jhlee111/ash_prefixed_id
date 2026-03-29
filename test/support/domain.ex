@@ -1,10 +1,10 @@
-defmodule AshObjectIds.Test.Domain do
+defmodule AshPrefixedId.Test.Domain do
   @moduledoc false
   use Ash.Domain
 
   resources do
-    resource(AshObjectIds.Test.Resources.Post)
-    resource(AshObjectIds.Test.Resources.Comment)
-    resource(AshObjectIds.Test.Resources.Unrelated)
+    resource(AshPrefixedId.Test.Resources.Post)
+    resource(AshPrefixedId.Test.Resources.Comment)
+    resource(AshPrefixedId.Test.Resources.Unrelated)
   end
 end
