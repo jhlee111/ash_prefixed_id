@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.1
+
+### Changed
+
+- `PostgresExtension`: drop `LEAKPROOF` from `timestamp_from_uuid_v7/1`.
+  LEAKPROOF only matters when a function appears in a query crossing a
+  PostgreSQL security barrier (RLS, `security_barrier` views), which Ash
+  does not enable by default. Marking a function leakproof requires
+  superuser, which blocks every managed Postgres provider (RDS, Cloud
+  SQL, Heroku, Supabase, Neon, …). Defaulting to portable migrations is
+  worth the lost optimizer hint. Users who actually need it can run
+  `ALTER FUNCTION timestamp_from_uuid_v7(uuid) LEAKPROOF;` themselves
+  as superuser.
+
 ## 0.1.0
 
 Forked from [ash_object_ids](https://github.com/drtheuns/ash_object_ids) and renamed to `AshPrefixedId`.

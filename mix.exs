@@ -5,7 +5,7 @@ defmodule AshPrefixedId.MixProject do
   An Ash extension to use prefixed IDs as primary and foreign keys.
   """
 
-  @version "0.1.0"
+  @version "0.1.1"
 
   @project_url "https://github.com/jhlee111/ash_prefixed_id"
 
