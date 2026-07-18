@@ -66,15 +66,15 @@ defmodule AshPrefixedId do
   alias AshPrefixedId.Type
 
   @transformers (if Code.ensure_loaded?(AshPostgres.DataLayer) do
-    [
-      AshPrefixedId.Transformers.BelongsToAttribute,
-      AshPrefixedId.Transformers.MigrationDefaults
-    ]
-  else
-    [
-      AshPrefixedId.Transformers.BelongsToAttribute
-    ]
-  end)
+                   [
+                     AshPrefixedId.Transformers.BelongsToAttribute,
+                     AshPrefixedId.Transformers.MigrationDefaults
+                   ]
+                 else
+                   [
+                     AshPrefixedId.Transformers.BelongsToAttribute
+                   ]
+                 end)
 
   @persisters [
     AshPrefixedId.Persisters.DefineType

@@ -20,7 +20,16 @@ defmodule AshPrefixedId.MixProject do
       description: @description,
       source_url: @project_url,
       homepage_url: @project_url,
-      elixirc_paths: elixirc_paths(Mix.env())
+      elixirc_paths: elixirc_paths(Mix.env()),
+      docs: docs()
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md", "CHANGELOG.md", "LICENSE"],
+      source_ref: "v#{@version}"
     ]
   end
 

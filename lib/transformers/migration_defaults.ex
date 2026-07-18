@@ -28,7 +28,12 @@ if Code.ensure_loaded?(AshPostgres.DataLayer) do
                   Transformer.get_option(dsl_state, [:postgres], :migration_defaults) || []
                 )
 
-              Transformer.set_option(dsl_state, [:postgres], :migration_defaults, migration_defaults)
+              Transformer.set_option(
+                dsl_state,
+                [:postgres],
+                :migration_defaults,
+                migration_defaults
+              )
 
             _ ->
               dsl_state

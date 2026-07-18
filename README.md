@@ -11,7 +11,7 @@ Add `ash_prefixed_id` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_prefixed_id, "~> 0.1.0"}
+    {:ash_prefixed_id, "~> 0.2.0"}
   ]
 end
 ```
