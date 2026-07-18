@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
+
+### Fixed
+
+- Casting/decoding a malformed prefixed ID whose slug contains characters
+  outside the base58 alphabet (`0`, `O`, `I`, `l`, punctuation, …) no longer
+  crashes with `ArithmeticError`/`ArgumentError` from erl_base58 — every
+  malformed input now returns `{:error, :invalid_prefixed_id}` (or raises
+  `ArgumentError` from the bang variants). This is the exact class a public
+  URL parameter delivers to a cast path.
 
 ### Added
 

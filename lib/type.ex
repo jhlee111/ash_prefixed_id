@@ -72,7 +72,7 @@ defmodule AshPrefixedId.Type do
   def decode_object_id(input) when is_binary(input) do
     case String.split(input, "_") do
       [prefix, slug] ->
-        case :base58.base58_to_binary(to_charlist(slug)) do
+        case base58_to_binary(slug) do
           uuid when is_binary(uuid) and byte_size(uuid) == 16 -> {:ok, prefix, uuid}
           _ -> {:error, :invalid_prefixed_id}
         end
@@ -83,6 +83,17 @@ defmodule AshPrefixedId.Type do
   end
 
   def decode_object_id(_), do: {:error, :invalid_prefixed_id}
+
+  # erl_base58 RAISES (ArithmeticError/ArgumentError) on characters outside
+  # the base58 alphabet (0, O, I, l, punctuation, …) instead of returning an
+  # error — but this decode sits on cast paths fed by EXTERNAL input (URL
+  # params), where malformed ids must come back as a tagged error, never a
+  # crash.
+  defp base58_to_binary(slug) do
+    :base58.base58_to_binary(to_charlist(slug))
+  rescue
+    _ -> :error
+  end
 
   def generator(uuid_type, prefix, constraints) do
     StreamData.repeatedly(fn ->

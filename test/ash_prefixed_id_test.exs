@@ -137,4 +137,33 @@ defmodule AshPrefixedIdTest do
   test "public decode_object_id/1 is removed in favor of to_uuid_string/1" do
     refute function_exported?(AshPrefixedId, :decode_object_id, 1)
   end
+
+  describe "non-base58 characters (erl_base58 raises internally)" do
+    # '0', 'O', 'I', 'l' sit OUTSIDE the base58 alphabet, and erl_base58's
+    # base58_to_binary RAISES ArithmeticError (`:error * 58`) on them
+    # instead of returning an error. This is exactly what a public URL
+    # delivers (gs_net /expo/e/:slug/:event_id, 2026-07-18): every
+    # malformed input must come back as a tagged error, never a crash.
+    test "to_uuid/1 returns a tagged error, not a raise" do
+      assert {:error, :invalid_prefixed_id} =
+               AshPrefixedId.to_uuid("user_00000000000000000000000000")
+
+      assert {:error, :invalid_prefixed_id} = AshPrefixedId.to_uuid("user_OIl0")
+    end
+
+    test "to_uuid_string!/1 raises ArgumentError, not ArithmeticError" do
+      assert_raise ArgumentError, fn ->
+        AshPrefixedId.to_uuid_string!("user_0")
+      end
+    end
+
+    test "the cast path (Type.decode_object_id/2) returns a tagged error" do
+      assert {:error, :invalid_prefixed_id} =
+               AshPrefixedId.Type.decode_object_id("user_0IlO", "user")
+    end
+
+    test "an empty slug is an error, not a crash" do
+      assert {:error, :invalid_prefixed_id} = AshPrefixedId.to_uuid("user_")
+    end
+  end
 end
