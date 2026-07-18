@@ -37,6 +37,30 @@ defmodule AshPrefixedId do
         belongs_to :post, App.Blog.Post
         # post_id attribute is auto-created as App.Blog.Post.ObjectId
       end
+
+  ## Working with IDs: the Ash boundary
+
+  Inside Ash you only ever deal with **prefixed IDs** — the raw UUID never
+  surfaces. Cast inputs, action results, and `belongs_to` foreign keys are all
+  prefixed. You therefore rarely need the conversion helpers in this module;
+  they exist for the **boundaries** of your system:
+
+    * Validating *external* input (HTTP params, request bodies, file contents)
+      before it enters Ash — use the non-bang `to_uuid/1` / `to_uuid_string/1`
+      and handle `{:error, :invalid_prefixed_id}`.
+    * Building raw SQL fragments, or talking to non-Ash code that needs the raw
+      UUID — use the bang `to_uuid!/1` / `to_uuid_string!/1`. IDs that come from
+      inside Ash are always valid, so let it crash.
+
+  Bang is the default inside Ash; reach for the non-bang variants only when an
+  invalid value is genuinely expected (i.e. at an external boundary).
+
+  If you find yourself sniffing the ID format (e.g. `String.starts_with?(id,
+  "user_")`) or handling "both raw UUID and prefixed" forms, that is a sign a
+  raw UUID has leaked across a boundary — fix the caller, don't normalize
+  everywhere. To accept both prefixed IDs and raw UUIDs transparently for a
+  `:uuid` field, register `AshPrefixedId.AnyPrefixedId` as a custom type instead
+  of converting by hand.
   """
 
   alias AshPrefixedId.Type
@@ -87,24 +111,85 @@ defmodule AshPrefixedId do
     persisters: @persisters
 
   @doc """
-  Decodes the given prefixed ID into a string version of the UUID.
+  Decodes a prefixed ID into the raw 16-byte UUID binary, returning a tagged tuple.
+
+  This is the non-bang variant: reach for it only when validating **external**
+  input (HTTP params, request bodies, file contents) at a boundary, where a bad
+  value is expected and you want to handle it gracefully. Inside Ash you only
+  ever see valid prefixed IDs, so prefer `to_uuid!/1` there.
 
   ## Examples
 
-      iex> decode_object_id("user_CWzLBdFy2f1XhrtesFferY")
+      iex> to_uuid("user_CWzLBdFy2f1XhrtesFferY")
+      {:ok, <<93, 68, 109, 8, ...>>}
+
+      iex> to_uuid("not a prefixed id")
+      {:error, :invalid_prefixed_id}
+  """
+  @spec to_uuid(binary()) :: {:ok, binary()} | {:error, :invalid_prefixed_id}
+  def to_uuid(prefixed_id) when is_binary(prefixed_id) do
+    case Type.decode_object_id(prefixed_id) do
+      {:ok, _prefix, uuid_bin} -> {:ok, uuid_bin}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Like `to_uuid/1` but returns the raw 16-byte UUID binary directly, raising on
+  invalid input. This is the default inside Ash, where IDs are always valid.
+
+  ## Examples
+
+      iex> to_uuid!("user_CWzLBdFy2f1XhrtesFferY")
+      <<93, 68, 109, 8, ...>>  # 16-byte binary
+  """
+  @spec to_uuid!(binary()) :: binary()
+  def to_uuid!(prefixed_id) when is_binary(prefixed_id) do
+    case to_uuid(prefixed_id) do
+      {:ok, uuid_bin} -> uuid_bin
+      {:error, _} -> raise ArgumentError, "invalid prefixed ID: #{inspect(prefixed_id)}"
+    end
+  end
+
+  @doc """
+  Decodes a prefixed ID into a UUID string, returning a tagged tuple.
+
+  The non-bang variant, for validating **external** input at a boundary. Inside
+  Ash, prefer `to_uuid_string!/1`.
+
+  ## Examples
+
+      iex> to_uuid_string("user_CWzLBdFy2f1XhrtesFferY")
       {:ok, "5d446d08-df6a-404d-a1e5-decc78429b3d"}
 
-      iex> decode_object_id("florb_CWzLBdFy2f1XhrtesFferY")
-      :error
-
-      iex> decode_object_id("something else")
-      :error
+      iex> to_uuid_string("not a prefixed id")
+      {:error, :invalid_prefixed_id}
   """
-  @spec decode_object_id(binary()) :: {:ok, String.t()} | :error
-  def decode_object_id(id) do
-    case Type.decode_object_id(id) do
-      {:ok, _prefix, uuid_bin} -> Ecto.UUID.load(uuid_bin)
-      :error -> :error
+  @spec to_uuid_string(binary()) :: {:ok, String.t()} | {:error, :invalid_prefixed_id}
+  def to_uuid_string(prefixed_id) when is_binary(prefixed_id) do
+    with {:ok, uuid_bin} <- to_uuid(prefixed_id),
+         {:ok, uuid_str} <- Ecto.UUID.load(uuid_bin) do
+      {:ok, uuid_str}
+    else
+      :error -> {:error, :invalid_prefixed_id}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  @doc """
+  Like `to_uuid_string/1` but returns the UUID string directly, raising on
+  invalid input. This is the default inside Ash.
+
+  ## Examples
+
+      iex> to_uuid_string!("user_CWzLBdFy2f1XhrtesFferY")
+      "5d446d08-df6a-404d-a1e5-decc78429b3d"
+  """
+  @spec to_uuid_string!(binary()) :: String.t()
+  def to_uuid_string!(prefixed_id) when is_binary(prefixed_id) do
+    case to_uuid_string(prefixed_id) do
+      {:ok, uuid_str} -> uuid_str
+      {:error, _} -> raise ArgumentError, "invalid prefixed ID: #{inspect(prefixed_id)}"
     end
   end
 
@@ -189,45 +274,29 @@ defmodule AshPrefixedId do
   end
 
   @doc """
-  Convert a prefixed ID to a 16-byte UUID binary for raw SQL fragments.
+  Encode a raw 16-byte UUID binary as a prefixed ID.
 
-  ## Examples
+  The second argument is either a prefix string or a resource module. Passing
+  the resource module resolves the prefix from its `prefixed_id` DSL, which
+  avoids hard-coding (and drifting from) the configured prefix.
 
-      iex> to_uuid!("user_CWzLBdFy2f1XhrtesFferY")
-      <<93, 68, 109, 8, ...>>  # 16-byte binary
-  """
-  @spec to_uuid!(binary()) :: binary()
-  def to_uuid!(prefixed_id) when is_binary(prefixed_id) do
-    case Type.decode_object_id(prefixed_id) do
-      {:ok, _prefix, uuid_bin} -> uuid_bin
-      _ -> raise ArgumentError, "invalid prefixed ID: #{inspect(prefixed_id)}"
-    end
-  end
-
-  @doc """
-  Convert a prefixed ID to a UUID string format.
-
-  ## Examples
-
-      iex> to_uuid_string!("user_CWzLBdFy2f1XhrtesFferY")
-      "5d446d08-df6a-404d-a1e5-decc78429b3d"
-  """
-  @spec to_uuid_string!(binary()) :: String.t()
-  def to_uuid_string!(prefixed_id) when is_binary(prefixed_id) do
-    {:ok, uuid_string} = Ecto.UUID.cast(to_uuid!(prefixed_id))
-    uuid_string
-  end
-
-  @doc """
-  Convert a UUID binary or string to a prefixed ID.
+  Encoding is infallible, so there is no bang variant. This is an escape hatch
+  for raw SQL / non-Ash code; inside Ash you receive prefixed IDs directly.
 
   ## Examples
 
       iex> to_prefixed_id(<<93, 68, 109, 8, ...>>, "user")
       "user_CWzLBdFy2f1XhrtesFferY"
+
+      iex> to_prefixed_id(<<93, 68, 109, 8, ...>>, MyApp.Accounts.User)
+      "user_CWzLBdFy2f1XhrtesFferY"
   """
-  @spec to_prefixed_id(binary(), String.t()) :: String.t()
-  def to_prefixed_id(uuid_bin_or_string, prefix) when is_binary(prefix) do
-    Type.encode_uuid(uuid_bin_or_string, prefix)
+  @spec to_prefixed_id(binary(), String.t() | module()) :: String.t()
+  def to_prefixed_id(uuid_binary, prefix) when is_binary(prefix) do
+    Type.encode_uuid(uuid_binary, prefix)
+  end
+
+  def to_prefixed_id(uuid_binary, resource) when is_atom(resource) do
+    to_prefixed_id(uuid_binary, AshPrefixedId.Info.prefixed_id_prefix!(resource))
   end
 end

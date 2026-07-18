@@ -41,9 +41,6 @@ defmodule AshPrefixedId.Type do
 
       {:error, _} ->
         :error
-
-      :error ->
-        :error
     end
   end
 
@@ -68,7 +65,7 @@ defmodule AshPrefixedId.Type do
     case decode_object_id(input) do
       {:ok, ^prefix, uuid} -> {:ok, uuid}
       {:ok, _other, _uuid} -> {:error, "incorrect object prefix"}
-      _ -> :error
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -77,15 +74,15 @@ defmodule AshPrefixedId.Type do
       [prefix, slug] ->
         case :base58.base58_to_binary(to_charlist(slug)) do
           uuid when is_binary(uuid) and byte_size(uuid) == 16 -> {:ok, prefix, uuid}
-          _ -> :error
+          _ -> {:error, :invalid_prefixed_id}
         end
 
       _ ->
-        :error
+        {:error, :invalid_prefixed_id}
     end
   end
 
-  def decode_object_id(_), do: :error
+  def decode_object_id(_), do: {:error, :invalid_prefixed_id}
 
   def generator(uuid_type, prefix, constraints) do
     StreamData.repeatedly(fn ->

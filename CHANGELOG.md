@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `to_uuid/1` and `to_uuid_string/1` — non-bang variants returning
+  `{:ok, value} | {:error, :invalid_prefixed_id}`, for validating external
+  input (HTTP params, etc.) at system boundaries.
+- `to_prefixed_id/2` now also accepts a resource module as the second argument,
+  resolving the prefix from the resource's `prefixed_id` DSL (avoids hard-coding
+  the prefix string).
+
+### Changed (breaking)
+
+- Removed `decode_object_id/1`. It was a redundantly-named twin of the new
+  `to_uuid_string/1`; use `to_uuid_string/1` (tagged tuple) or
+  `to_uuid_string!/1` (raising) instead.
+- `to_uuid_string!/1` now raises `ArgumentError` for invalid input (previously
+  could leak a `MatchError`).
+- Conversion failures now use tagged `{:error, :invalid_prefixed_id}` tuples
+  instead of a bare `:error`.
+
 ## 0.1.1
 
 ### Changed

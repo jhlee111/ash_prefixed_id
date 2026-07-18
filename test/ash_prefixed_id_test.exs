@@ -7,6 +7,9 @@ defmodule AshPrefixedIdTest do
   alias AshPrefixedId.Test.Resources.Post
   alias AshPrefixedId.Test.Resources.Unrelated
 
+  @valid_id "user_CWzLBdFy2f1XhrtesFferY"
+  @valid_uuid "5d446d08-df6a-404d-a1e5-decc78429b3d"
+
   test "it replaces the primary key with an object id" do
     assert [pk] = Ash.Resource.Info.primary_key(Post)
     attr = Ash.Resource.Info.attribute(Post, pk)
@@ -68,5 +71,70 @@ defmodule AshPrefixedIdTest do
 
   test "find_duplicate_prefixes" do
     assert %{"c" => [Unrelated, Comment]} == AshPrefixedId.find_duplicate_prefixes([Domain])
+  end
+
+  describe "to_uuid/1 (non-bang, external-boundary)" do
+    test "decodes a valid prefixed ID to a 16-byte binary" do
+      assert {:ok, bin} = AshPrefixedId.to_uuid(@valid_id)
+      assert byte_size(bin) == 16
+    end
+
+    test "returns {:error, :invalid_prefixed_id} for malformed input" do
+      assert {:error, :invalid_prefixed_id} = AshPrefixedId.to_uuid("garbage")
+      assert {:error, :invalid_prefixed_id} = AshPrefixedId.to_uuid("user_2")
+    end
+  end
+
+  describe "to_uuid!/1 (bang, Ash-internal default)" do
+    test "returns the raw 16-byte binary" do
+      assert <<_::128>> = AshPrefixedId.to_uuid!(@valid_id)
+    end
+
+    test "raises ArgumentError for malformed input" do
+      assert_raise ArgumentError, fn -> AshPrefixedId.to_uuid!("garbage") end
+      assert_raise ArgumentError, fn -> AshPrefixedId.to_uuid!("user_2") end
+    end
+  end
+
+  describe "to_uuid_string/1 (non-bang, external-boundary)" do
+    test "decodes a valid prefixed ID to a dashed UUID string" do
+      assert {:ok, @valid_uuid} = AshPrefixedId.to_uuid_string(@valid_id)
+    end
+
+    test "returns {:error, :invalid_prefixed_id} for malformed input" do
+      assert {:error, :invalid_prefixed_id} = AshPrefixedId.to_uuid_string("garbage")
+    end
+  end
+
+  describe "to_uuid_string!/1 (bang, Ash-internal default)" do
+    test "returns the dashed UUID string" do
+      assert @valid_uuid == AshPrefixedId.to_uuid_string!(@valid_id)
+    end
+
+    test "raises ArgumentError (not MatchError) for malformed input" do
+      assert_raise ArgumentError, fn -> AshPrefixedId.to_uuid_string!("garbage") end
+    end
+  end
+
+  describe "to_prefixed_id/2" do
+    test "encodes a uuid binary with a string prefix" do
+      {:ok, bin} = AshPrefixedId.to_uuid(@valid_id)
+      assert @valid_id == AshPrefixedId.to_prefixed_id(bin, "user")
+    end
+
+    test "resolves the prefix from a resource module" do
+      bin = Ecto.UUID.bingenerate()
+      assert "post_" <> _ = AshPrefixedId.to_prefixed_id(bin, Post)
+    end
+
+    test "resource overload round-trips through the resource's ObjectId" do
+      bin = Ecto.UUID.bingenerate()
+      encoded = AshPrefixedId.to_prefixed_id(bin, Post)
+      assert {:ok, ^bin} = AshPrefixedId.to_uuid(encoded)
+    end
+  end
+
+  test "public decode_object_id/1 is removed in favor of to_uuid_string/1" do
+    refute function_exported?(AshPrefixedId, :decode_object_id, 1)
   end
 end

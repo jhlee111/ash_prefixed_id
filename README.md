@@ -93,16 +93,28 @@ end
 
 ### Utility Functions
 
+Inside Ash you only ever see prefixed IDs, so you rarely need these. They are
+escape hatches for the **boundaries** of your system: validating external input,
+or building raw SQL / talking to non-Ash code. Bang variants are the default;
+the non-bang `{:error, _}` variants are for external input you expect might be
+invalid.
+
 ```elixir
-# Decode a prefixed ID to a UUID string
-AshPrefixedId.decode_object_id("user_CWzLBdFy2f1XhrtesFferY")
-#=> {:ok, "5d446d08-df6a-404d-a1e5-decc78429b3d"}
-
-# Convert to raw UUID binary (for SQL fragments)
+# Decode a prefixed ID to the raw 16-byte UUID binary (for SQL fragments)
 AshPrefixedId.to_uuid!("user_CWzLBdFy2f1XhrtesFferY")
+#=> <<93, 68, 109, 8, ...>>
 
-# Convert UUID back to prefixed ID
+# Decode to a UUID string
+AshPrefixedId.to_uuid_string!("user_CWzLBdFy2f1XhrtesFferY")
+#=> "5d446d08-df6a-404d-a1e5-decc78429b3d"
+
+# Non-bang variants for validating EXTERNAL input (e.g. an HTTP param)
+AshPrefixedId.to_uuid(param)         #=> {:ok, <<...>>} | {:error, :invalid_prefixed_id}
+AshPrefixedId.to_uuid_string(param)  #=> {:ok, "..."} | {:error, :invalid_prefixed_id}
+
+# Encode a UUID binary back to a prefixed ID (prefix string or resource module)
 AshPrefixedId.to_prefixed_id(uuid_binary, "user")
+AshPrefixedId.to_prefixed_id(uuid_binary, MyApp.Accounts.User)
 
 # Find which resource a prefixed ID belongs to
 AshPrefixedId.find_resource_for_id(domains, "user_CWzLBdFy2f1XhrtesFferY")
@@ -110,6 +122,9 @@ AshPrefixedId.find_resource_for_id(domains, "user_CWzLBdFy2f1XhrtesFferY")
 # Detect duplicate prefixes across domains
 AshPrefixedId.find_duplicate_prefixes(domains)
 ```
+
+To accept both prefixed IDs and raw UUIDs transparently rather than converting
+by hand, register `AshPrefixedId.AnyPrefixedId` as a custom type (see above).
 
 For more detailed information, read the `AshPrefixedId` moduledoc.
 
